@@ -73,7 +73,7 @@ function adapter(uri, opts){
     sub.psubscribe(prefix + '#*', function(err){
       if (err) self.emit('error', err);
     });
-    sub.on('pmessage', this.onmessage.bind(this));
+    sub.on('messageBuffer', this.onmessage.bind(this));
   }
 
   /**
