@@ -3,11 +3,11 @@
  * Module dependencies.
  */
 
+var util = require('util');
 var uid2 = require('uid2');
 var redis = require('redis').createClient;
 var msgpack = require('msgpack-js');
 var Adapter = require('socket.io-adapter');
-var Emitter = require('events').EventEmitter;
 var debug = require('debug')('socket.io-redis');
 
 /**
@@ -73,14 +73,14 @@ function adapter(uri, opts){
     sub.psubscribe(prefix + '#*', function(err){
       if (err) self.emit('error', err);
     });
-    sub.on('messageBuffer', this.onmessage.bind(this));
+    sub.on('pmessageBuffer', this.onmessage.bind(this));
   }
 
   /**
    * Inherits from `Adapter`.
    */
 
-  Redis.prototype.__proto__ = Adapter.prototype;
+  util.inherits(Redis, Adapter);
 
   /**
    * Called with a subscription message
@@ -89,6 +89,7 @@ function adapter(uri, opts){
    */
 
   Redis.prototype.onmessage = function(pattern, channel, msg){
+    channel = channel.toString();
     var pieces = channel.split('#');
     if (uid == pieces.pop()) return debug('ignore same uid');
     var args = msgpack.decode(msg);
@@ -119,6 +120,12 @@ function adapter(uri, opts){
     Adapter.prototype.broadcast.call(this, packet, opts);
     if (!remote) pub.publish(key, msgpack.encode([packet, opts]));
   };
+
+  //expose properties (as documented...)
+  Redis.uid = uid;
+  Redis.prefix = prefix;
+  Redis.pubClient = pub;
+  Redis.subClient = sub;
 
   return Redis;
 
